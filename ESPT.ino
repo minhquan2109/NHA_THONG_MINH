@@ -1,17 +1,17 @@
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include <WiFiClientSecure.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include <Arduino.h>
-#include "FreeRTOSConfig.h"
-#include <esp_task_wdt.h>
-#define BLYNK_TEMPLATE_ID "TMPL6d3nOXz76"
-#define BLYNK_TEMPLATE_NAME "ESP32"
-#define BLYNK_AUTH_TOKEN "-fUaRpB_YBcjXbGdDhmWzrGAR27sULlU"
-#define BLYNK_PRINT Serial
-#include <WiFi.h>
-#include <BlynkSimpleEsp32.h>
+#include <WiFi.h>                      // Thư viện kết nối WiFi.
+#include <HTTPClient.h>                // Thư viện để tạo yêu cầu HTTP.
+#include <WiFiClientSecure.h>          // Thư viện kết nối client bảo mật (SSL/TLS).
+#include "freertos/FreeRTOS.h"         // Thư viện FreeRTOS cho đa nhiệm.
+#include "freertos/task.h"             // Thư viện quản lý tác vụ của FreeRTOS.
+#include <Arduino.h>                   // Thư viện Arduino cơ bản.
+#include "FreeRTOSConfig.h"            // Tập tin cấu hình FreeRTOS.
+#include <esp_task_wdt.h>              // Thư viện quản lý watchdog timer.
+#define BLYNK_TEMPLATE_ID "TMPL6d3nOXz76"       // ID mẫu Blynk.
+#define BLYNK_TEMPLATE_NAME "ESP32"             // Tên mẫu Blynk.
+#define BLYNK_AUTH_TOKEN "-fUaRpB_YBcjXbGdDhmWzrGAR27sULlU" // Mã thông báo xác thực Blynk.
+#define BLYNK_PRINT Serial                      // Cấu hình để in ra Serial monitor.
+#include <BlynkSimpleEsp32.h>                   // Thư viện Blynk cho ESP32.
+// Định nghĩa chân nút nhấn và led
 #define bt0 15
 #define led0 25
 #define bt1 17
@@ -22,11 +22,13 @@
 #define led3 14
 #define bt4 19  
 #define led4 12
+//Định nghĩa chân ảo Blynk
 #define VIRTUAL_PIN0 V0
 #define VIRTUAL_PIN1 V1
 #define VIRTUAL_PIN2 V2
-#define VIRTUAL_PIN2 V3
+#define VIRTUAL_PIN3 V3
 #define VIRTUAL_PIN4 V4
+//Biến trạng thái nút nhấn và đèn LED
 int buttonState0 = HIGH;
 int ledState0 = LOW;
 int buttonState1 = HIGH;
@@ -37,65 +39,69 @@ int buttonState3 = HIGH;
 int ledState3 = LOW;
 int buttonState4 = HIGH;
 int ledState4 = LOW;
+//Biến cảm biến
 float t = 0.0;
 float h = 0.0;
 int flameLevel = 0;
 int gasLevel = 0;
-char auth[] = "-fUaRpB_YBcjXbGdDhmWzrGAR27sULlU";
-char ssid[] = "NHOM THEM TRA SUA 5G";
-char pass[] = "0337027822";
-const int myChannelNumber = 2555593;
-const char* writeAPIKey = "UUX4MOG2DG484L7S";
-const char* server = "api.thingspeak.com";
+//Thông tin kết nối WiFi và ThingSpeak
+char auth[] = "-fUaRpB_YBcjXbGdDhmWzrGAR27sULlU";      // Mã thông báo xác thực Blynk.
+char ssid[] = "NHOM THEM TRA SUA 5G";                 // SSID WiFi.
+char pass[] = "0337027822";                           // Mật khẩu WiFi.
+const int myChannelNumber = 2555593;                  // Số kênh ThingSpeak.
+const char* writeAPIKey = "UUX4MOG2DG484L7S";         // Khóa API ThingSpeak.
+const char* server = "api.thingspeak.com";            // Máy chủ ThingSpeak.
+//Hàm điều khiển Blynk cho đèn LED
 BLYNK_WRITE(V0) {
-  int pinValue0 = param.asInt();
-  ledState0 = pinValue0;
-  digitalWrite(led0, ledState0);
+  int pinValue0 = param.asInt();    // Đọc giá trị từ chân ảo V0.
+  ledState0 = pinValue0;            // Cập nhật trạng thái đèn LED 0.
+  digitalWrite(led0, ledState0);    // Điều khiển đèn LED 0.
 }
 BLYNK_WRITE(V1) {
-  int pinValue1 = param.asInt();
-  ledState1 = pinValue1;
-  digitalWrite(led1, ledState1);
+  int pinValue1 = param.asInt();    // Đọc giá trị từ chân ảo V1.
+  ledState1 = pinValue1;            // Cập nhật trạng thái đèn LED 1.
+  digitalWrite(led1, ledState1);    // Điều khiển đèn LED 1.
 }
 BLYNK_WRITE(V2) {
-  int pinValue2 = param.asInt();
-  ledState2 = pinValue2;
-  digitalWrite(led2, ledState2);
+  int pinValue2 = param.asInt();    // Đọc giá trị từ chân ảo V2.
+  ledState2 = pinValue2;            // Cập nhật trạng thái đèn LED 2.
+  digitalWrite(led2, ledState2);    // Điều khiển đèn LED 2.
 }
 BLYNK_WRITE(V3) {
-  int pinValue3 = param.asInt();
-  ledState3 = pinValue3;
-  digitalWrite(led3, ledState3);
+  int pinValue3 = param.asInt();    // Đọc giá trị từ chân ảo V3.
+  ledState3 = pinValue3;            // Cập nhật trạng thái đèn LED 3.
+  digitalWrite(led3, ledState3);    // Điều khiển đèn LED 3.
 }
 BLYNK_WRITE(V4) {
-  int pinValue4 = param.asInt();
-  ledState4 = pinValue4;
-  digitalWrite(led4, ledState4);
+  int pinValue4 = param.asInt();    // Đọc giá trị từ chân ảo V4.
+  ledState4 = pinValue4;            // Cập nhật trạng thái đèn LED 4.
+  digitalWrite(led4, ledState4);    // Điều khiển đèn LED 4.
 }
+//Hàm kiểm tra nút nhấn và điều khiển đèn LED
 void checkButton0() {
-  if (digitalRead(bt0) == LOW) {
-    if (buttonState0 == HIGH) {
-      ledState0 = !ledState0;
-      Blynk.virtualWrite(V0, ledState0);
-      digitalWrite(led0, ledState0);
-      delay(200);
+  if (digitalRead(bt0) == LOW) {            // Nếu nút nhấn bt0 được nhấn.
+    if (buttonState0 == HIGH) {             // Nếu trạng thái nút trước đó là HIGH.
+      ledState0 = !ledState0;               // Đổi trạng thái đèn LED 0.
+      Blynk.virtualWrite(V0, ledState0);    // Cập nhật trạng thái đèn LED 0 trên Blynk.
+      digitalWrite(led0, ledState0);        // Điều khiển đèn LED 0.
+      delay(200);                           // Trì hoãn để tránh nhiễu.
     }
-    buttonState0 = LOW;
+    buttonState0 = LOW;                     // Cập nhật trạng thái nút hiện tại là LOW.
   } else {
-    buttonState0 = HIGH;
+    buttonState0 = HIGH;                    // Nếu nút không được nhấn, trạng thái nút là HIGH.
   }
 }
 void checkButton1() {
-  if (digitalRead(bt1) == LOW) {
-    if (buttonState1 == HIGH) {
-      ledState1 = !ledState1;
-      Blynk.virtualWrite(V1, ledState1);
-      digitalWrite(led1, ledState1);
-      delay(200);
+  if (digitalRead(bt1) == LOW) {            // Nếu nút nhấn bt1 được nhấn.
+    if (buttonState1 == HIGH) {             // Nếu trạng thái nút trước đó là HIGH.
+      ledState1 = !ledState1;               // Đổi trạng thái đèn LED 1.
+      Blynk.virtualWrite(V1, ledState1);    // Cập nhật trạng thái đèn LED 1 trên Blynk.
+      digitalWrite(led1, ledState1);        // Điều khiển đèn LED 1.
+      delay(200);                           // Trì hoãn để tránh nhiễu.
     }
-    buttonState1 = LOW;
+    buttonState1 = LOW;                     // Cập nhật trạng thái nút hiện tại là LOW.
   } else {
-    buttonState1 = HIGH;
+    buttonState1 = HIGH;                    // Nếu nút không được nhấn, trạng thái nút là HIGH.
   }
 }
 void checkButton2() {
