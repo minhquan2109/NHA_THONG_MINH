@@ -1,13 +1,13 @@
 #include <Arduino.h>  // Thư viện Arduino cơ bản.
-int ls1=8;
-int ls2=9;
-int S1=41;
-int S2=43;
-int e1=36;
-int e2=38;
-int i1=12;
-int i2=11;
-int H=180;
+int ls1 = 8;   // Định nghĩa chân cảm biến ls1.
+int ls2 = 9;   // Định nghĩa chân cảm biến ls2.
+int S1 = 41;   // Định nghĩa chân cảm biến S1.
+int S2 = 43;   // Định nghĩa chân cảm biến S2.
+int e1 = 36;   // Định nghĩa chân điều khiển tốc độ động cơ 1.
+int e2 = 38;   // Định nghĩa chân điều khiển tốc độ động cơ 2.
+int i1 = 12;   // Định nghĩa chân điều khiển hướng động cơ 1.
+int i2 = 11;   // Định nghĩa chân điều khiển hướng động cơ 2.
+int H = 180;   // Định nghĩa tốc độ động cơ.
 void forward(){
   digitalWrite(i1,HIGH);
   digitalWrite(i2,LOW);
