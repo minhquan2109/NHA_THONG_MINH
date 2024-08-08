@@ -1,4 +1,4 @@
-#include<Arduino.h>
+#include <Arduino.h>  // Thư viện Arduino cơ bản.
 int ls1=8;
 int ls2=9;
 int S1=41;
