@@ -104,13 +104,13 @@ void checkButton1() {
     buttonState1 = HIGH;                    // Nếu nút không được nhấn, trạng thái nút là HIGH.
   }
 }
-void checkButton2() {
-  if (digitalRead(bt2) == LOW) {
-    if (buttonState2 == HIGH) {
-      ledState2 = !ledState2;
-      Blynk.virtualWrite(V2, ledState2);
-      digitalWrite(led2, ledState2);
-      delay(200);
+void checkButton2() {                       
+  if (digitalRead(bt2) == LOW) {            // Nếu nút nhấn bt2 được nhấn.
+    if (buttonState2 == HIGH) {             // Nếu trạng thái nút trước đó là HIGH.
+      ledState2 = !ledState2;               // Đổi trạng thái đèn LED 2. 
+      Blynk.virtualWrite(V2, ledState2);    // Cập nhật trạng thái đèn LED 2 trên Blynk.
+      digitalWrite(led2, ledState2);        // Điều khiển đèn LED 2.
+      delay(200);                           // Trì hoãn để tránh nhiễu. 
     }
     buttonState2 = LOW;
   } else {
@@ -118,12 +118,12 @@ void checkButton2() {
   }
 }
 void checkButton3() {
-  if (digitalRead(bt3) == LOW) {
-    if (buttonState3 == HIGH) {
-      ledState3 = !ledState3;
-      Blynk.virtualWrite(V3, ledState3);
-      digitalWrite(led3, ledState3);
-      delay(200);
+  if (digitalRead(bt3) == LOW) {            // Nếu nút nhấn bt3 được nhấn.
+    if (buttonState3 == HIGH) {             // Nếu trạng thái nút trước đó là HIGH.
+      ledState3 = !ledState3;               // Đổi trạng thái đèn LED 3. 
+      Blynk.virtualWrite(V3, ledState3);    // Cập nhật trạng thái đèn LED 3 trên Blynk.
+      digitalWrite(led3, ledState3);        // Điều khiển đèn LED 3.
+      delay(200);                           // Trì hoãn để tránh nhiễu.
     }
     buttonState3 = LOW;
   } else {
@@ -131,12 +131,12 @@ void checkButton3() {
   }
 }
 void checkButton4() {
-  if (digitalRead(bt4) == LOW) {
-    if (buttonState4 == HIGH) {
-      ledState4 = !ledState4;
-      Blynk.virtualWrite(V4, ledState4);
-      digitalWrite(led4, ledState4);
-      delay(200);
+  if (digitalRead(bt4) == LOW) {            // Nếu nút nhấn bt4 được nhấn.
+    if (buttonState4 == HIGH) {             // Nếu trạng thái nút trước đó là HIGH.
+      ledState4 = !ledState4;               // Đổi trạng thái đèn LED 4. 
+      Blynk.virtualWrite(V4, ledState4);    // Cập nhật trạng thái đèn LED 4 trên Blynk.
+      digitalWrite(led4, ledState4);        // Điều khiển đèn LED 4.
+      delay(200);                           // Trì hoãn để tránh nhiễu.
     }
     buttonState4 = LOW;
   } else {
@@ -144,98 +144,24 @@ void checkButton4() {
   }
 }
 void setup() {
-  Serial.begin(9600);
-  WiFi.disconnect();
-  delay(2000);
-  Serial.println("Connecting to ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, pass);
-  xTaskCreate( readData,"ReadData",4000,NULL,1,NULL);       
-  xTaskCreate(sendData,"SendData",4000,NULL,1,NULL);      
-  xTaskCreate(Task_Control,"Task_Control",8000,NULL,1,NULL);
-  xTaskCreate(Task_Blynk_Loop,"loop1",6000,NULL,1,NULL);}
+  Serial.begin(9600); // Khởi động giao tiếp Serial với tốc độ truyền 9600 bps.
+  WiFi.disconnect(); // Ngắt kết nối WiFi hiện tại (nếu có).
+  delay(2000); // Chờ 2 giây để đảm bảo WiFi đã ngắt kết nối hoàn toàn.
+  Serial.println("Connecting to "); // In ra Serial Monitor thông báo "Connecting to".
+  Serial.println(ssid); // In ra tên mạng WiFi mà thiết bị sẽ kết nối.
+  WiFi.begin(ssid, pass); // Bắt đầu kết nối WiFi với SSID và mật khẩu đã định nghĩa trước đó.
+  xTaskCreate(readData,"ReadData",4000,NULL,1,NULL); // Tạo task "readData" với stack size 4000 bytes, priority 1.
+  xTaskCreate(sendData,"SendData",4000,NULL,1,NULL); // Tạo task "sendData" với stack size 4000 bytes, priority 1.
+  xTaskCreate(Task_Control,"Task_Control",8000,NULL,1,NULL); // Tạo task "Task_Control" với stack size 8000 bytes, priority 1.
+  xTaskCreate(Task_Blynk_Loop,"loop1",6000,NULL,1,NULL); // Tạo task "Task_Blynk_Loop" với stack size 6000 bytes, priority 1.
+}
 void loop() {
-}
-void readData(void* parameter) {
-    while (1) {
-      if (Serial.available()) {
-        String data = Serial.readStringUntil('\n');
-      if (data.startsWith("H:")) {
-                int endIndex = data.indexOf(",");
-                String humidityData = data.substring(2, endIndex);
-                h = humidityData.toFloat();
-                data = data.substring(endIndex + 1);
-            }
-      if (data.startsWith("T:")) {
-                int endIndex = data.indexOf(",");
-                String tempData = data.substring(2, endIndex);
-                t = tempData.toFloat();
-                data = data.substring(endIndex + 1);
-            }
-      if (data.startsWith("Gas:")) {
-                int endIndex = data.indexOf(",");
-                String gasData = data.substring(4, endIndex);
-                gasLevel = gasData.toInt();
-                data = data.substring(endIndex + 1);
-            }
-      if (data.startsWith("Flame:")) {
-                String flameData = data.substring(6, data.length());
-                flameLevel = flameData.toInt();
-            }
-  }
-  delay(100);
-}
-}
-void sendData(void* parameter) {
-  while (1) {
-    if (WiFi.status() == WL_CONNECTED) {
-      WiFiClient client;
-      HTTPClient http;
-      String url = "http://" + String(server) + "/update?api_key=" + writeAPIKey;
-      url += "&field1=" + String(t);
-      url += "&field2=" + String(h);
-      url += "&field3=" + String(flameLevel);
-      url += "&field4=" + String(gasLevel);
-      Serial.print("Temperature: ");
-      Serial.println(t);
-      Serial.print("Humidity: ");
-      Serial.println(h);
-      Serial.print("Flame level: ");
-      Serial.println(flameLevel);
-      Serial.print("Gas level: ");
-      Serial.println(gasLevel);
-      http.begin(client, url);
-      int httpResponseCode = http.GET();
-      if (httpResponseCode > 0) {
-        Serial.print("HTTP Response code: ");
-        Serial.println(httpResponseCode);
-      } else {
-        Serial.print("Error code: ");
-        Serial.println(httpResponseCode);
-      }
-      http.end();
-    } else {
-      Serial.println("WiFi Disconnected");
-    }
-    delay(1000);  // Gửi dữ liệu mỗi 10 giây
-  }
-}
-void Task_Blynk_Loop(void *pvParameters) {
-  (void)pvParameters;
-
-  Blynk.begin(auth, ssid, pass);
-  while (Blynk.connected() == false) {
-  }
-  Serial.println();
-  Serial.println("Blynk Connected");
-  Serial.println("Blynk Loop Task Started");
-  while (1) {
-    Blynk.run();
-    delay(1);
-  }
+  // Hàm loop() trống vì các tác vụ đã được xử lý bởi FreeRTOS tasks.
 }
 void Task_Control(void *pvParameters) {
-  (void)pvParameters;
+  (void)pvParameters; // Không sử dụng tham số này, chỉ để tránh cảnh báo compiler.
+  
+  // Thiết lập chế độ cho các chân nút nhấn và đèn LED
   pinMode(bt0, INPUT_PULLUP);
   pinMode(bt1, INPUT_PULLUP);
   pinMode(bt2, INPUT_PULLUP);
@@ -246,11 +172,99 @@ void Task_Control(void *pvParameters) {
   pinMode(led2, OUTPUT);
   pinMode(led3, OUTPUT);
   pinMode(led4, OUTPUT);
-  while (1) {
-    checkButton0();
-    checkButton1();
-    checkButton2();
-    checkButton3();
-    checkButton4();
+  
+  while (1) { // Vòng lặp vô tận để task luôn chạy.
+    checkButton0(); // Kiểm tra trạng thái của nút nhấn bt0 và thực hiện hành động tương ứng.
+    checkButton1(); // Kiểm tra trạng thái của nút nhấn bt1 và thực hiện hành động tương ứng.
+    checkButton2(); // Kiểm tra trạng thái của nút nhấn bt2 và thực hiện hành động tương ứng.
+    checkButton3(); // Kiểm tra trạng thái của nút nhấn bt3 và thực hiện hành động tương ứng.
+    checkButton4(); // Kiểm tra trạng thái của nút nhấn bt4 và thực hiện hành động tương ứng.
   }
 }
+void readData(void* parameter) {
+    while (1) { // Vòng lặp vô tận để task luôn chạy.
+      if (Serial.available()) { // Kiểm tra xem có dữ liệu nào đang chờ đọc từ Serial không.
+        String data = Serial.readStringUntil('\n'); // Đọc một dòng dữ liệu từ Serial cho đến khi gặp ký tự '\n'.
+        
+        if (data.startsWith("H:")) { // Kiểm tra nếu dữ liệu bắt đầu với "H:".
+            int endIndex = data.indexOf(","); // Tìm vị trí của dấu phẩy đầu tiên.
+            String humidityData = data.substring(2, endIndex); // Lấy dữ liệu độ ẩm từ vị trí 2 đến vị trí dấu phẩy.
+            h = humidityData.toFloat(); // Chuyển đổi dữ liệu độ ẩm sang kiểu float và lưu vào biến h.
+            data = data.substring(endIndex + 1); // Cắt bỏ phần dữ liệu đã xử lý.
+        }
+        
+        if (data.startsWith("T:")) { // Kiểm tra nếu dữ liệu bắt đầu với "T:".
+            int endIndex = data.indexOf(","); // Tìm vị trí của dấu phẩy đầu tiên.
+            String tempData = data.substring(2, endIndex); // Lấy dữ liệu nhiệt độ từ vị trí 2 đến vị trí dấu phẩy.
+            t = tempData.toFloat(); // Chuyển đổi dữ liệu nhiệt độ sang kiểu float và lưu vào biến t.
+            data = data.substring(endIndex + 1); // Cắt bỏ phần dữ liệu đã xử lý.
+        }
+        
+        if (data.startsWith("Gas:")) { // Kiểm tra nếu dữ liệu bắt đầu với "Gas:".
+            int endIndex = data.indexOf(","); // Tìm vị trí của dấu phẩy đầu tiên.
+            String gasData = data.substring(4, endIndex); // Lấy dữ liệu khí gas từ vị trí 4 đến vị trí dấu phẩy.
+            gasLevel = gasData.toInt(); // Chuyển đổi dữ liệu khí gas sang kiểu int và lưu vào biến gasLevel.
+            data = data.substring(endIndex + 1); // Cắt bỏ phần dữ liệu đã xử lý.
+        }
+        
+        if (data.startsWith("Flame:")) { // Kiểm tra nếu dữ liệu bắt đầu với "Flame:".
+            String flameData = data.substring(6, data.length()); // Lấy dữ liệu ngọn lửa từ vị trí 6 đến hết chuỗi.
+            flameLevel = flameData.toInt(); // Chuyển đổi dữ liệu ngọn lửa sang kiểu int và lưu vào biến flameLevel.
+        }
+      }
+      delay(100); // Chờ 100ms trước khi kiểm tra lần tiếp theo.
+    }
+}
+void sendData(void* parameter) {
+  while (1) { // Vòng lặp vô tận để task luôn chạy.
+    if (WiFi.status() == WL_CONNECTED) { // Kiểm tra xem WiFi có kết nối không.
+      WiFiClient client; // Tạo một đối tượng WiFiClient.
+      HTTPClient http; // Tạo một đối tượng HTTPClient.
+      String url = "http://" + String(server) + "/update?api_key=" + writeAPIKey; // Tạo URL để gửi dữ liệu.
+      url += "&field1=" + String(t); // Thêm dữ liệu nhiệt độ vào URL.
+      url += "&field2=" + String(h); // Thêm dữ liệu độ ẩm vào URL.
+      url += "&field3=" + String(flameLevel); // Thêm dữ liệu mức độ lửa vào URL.
+      url += "&field4=" + String(gasLevel); // Thêm dữ liệu mức độ khí gas vào URL.
+      
+      // In dữ liệu ra Serial Monitor để debug
+      Serial.print("Temperature: ");
+      Serial.println(t);
+      Serial.print("Humidity: ");
+      Serial.println(h);
+      Serial.print("Flame level: ");
+      Serial.println(flameLevel);
+      Serial.print("Gas level: ");
+      Serial.println(gasLevel);
+      
+      http.begin(client, url); // Bắt đầu kết nối HTTP với URL.
+      int httpResponseCode = http.GET(); // Gửi yêu cầu GET và nhận mã phản hồi.
+      
+      if (httpResponseCode > 0) { // Nếu mã phản hồi lớn hơn 0, tức là yêu cầu thành công.
+        Serial.print("HTTP Response code: ");
+        Serial.println(httpResponseCode); // In mã phản hồi ra Serial Monitor.
+      } else { // Nếu mã phản hồi nhỏ hơn hoặc bằng 0, tức là yêu cầu thất bại.
+        Serial.print("Error code: ");
+        Serial.println(httpResponseCode); // In mã lỗi ra Serial Monitor.
+      }
+      http.end(); // Kết thúc kết nối HTTP.
+    } else {
+      Serial.println("WiFi Disconnected"); // In ra Serial Monitor nếu WiFi bị ngắt kết nối.
+    }
+    delay(1000);  // Chờ 1 giây trước khi gửi dữ liệu lần tiếp theo.
+  }
+}
+void Task_Blynk_Loop(void *pvParameters) {
+  (void)pvParameters; // Không sử dụng tham số này, chỉ để tránh cảnh báo compiler.
+
+  Blynk.begin(auth, ssid, pass); // Kết nối Blynk với thông tin xác thực và WiFi.
+  while (Blynk.connected() == false) { // Chờ cho đến khi kết nối Blynk thành công.
+  }
+  Serial.println();
+  Serial.println("Blynk Connected"); // In ra Serial Monitor khi kết nối thành công.
+  Serial.println("Blynk Loop Task Started"); // In ra Serial Monitor khi task bắt đầu.
+  while (1) { // Vòng lặp vô tận để task luôn chạy.
+    Blynk.run(); // Chạy Blynk.
+    delay(1); // Chờ 1ms trước khi lặp lại.
+  }
+}
+
