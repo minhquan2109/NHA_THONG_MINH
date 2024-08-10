@@ -314,45 +314,74 @@ void humid_function() {
 void loop() 
 {}
 
+// Hàm này được gọi để nhập mật khẩu
 void Enter_Pass_Word(void *pvParameters) {
+  // In ra Serial để báo hiệu rằng Serial đã bật
   Serial.print("Serial ON");
   Serial.write(0xff);
   Serial.write(0xff);
   Serial.write(0xff);
+  
+  // Khóa cửa
   lockDoor();
+  
+  // Đặt chế độ OUTPUT cho đèn LED
   pinMode(LED_PW, OUTPUT);
+  
+  // Vòng lặp vô hạn để giữ task này chạy mãi mãi
   while (1) {
+    // Trì hoãn task trong 5ms
     vTaskDelay(5 / portTICK_PERIOD_MS);
   }
 }
-//---------------------------------------------
-void keypad_password_function(void *pvParameters)
-{
+
+// Hàm này được gọi để xử lý chức năng nhập mật khẩu từ bàn phím
+void keypad_password_function(void *pvParameters) {
+  // Khởi tạo và bật đèn nền LCD
   lcd.init();
-  lcd.begin(16,2);
+  lcd.begin(16, 2);
   lcd.backlight();
-  //pinMode(relay, OUTPUT);
+  
+  // Đặt chế độ OUTPUT cho chân vcc
   pinMode(vcc, OUTPUT);
+  
+  // Hiển thị thông tin lên LCD
   lcd.print(" MOUNT DYNAMICS ");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0, 1);
   lcd.print("Electronic Lock ");
+  
+  // Trì hoãn task trong 1000ms
   vTaskDelay(1000 / portTICK_PERIOD_MS);
+  
+  // Xóa màn hình LCD
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
+  
+  // Hiển thị thông báo nhập mật khẩu
   lcd.print("Enter Password");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0, 1);
+  
+  // Khởi tạo mật khẩu ban đầu
   initialpassword();
-  while(1)
-  {
+  
+  // Vòng lặp vô hạn để giữ task này chạy mãi mãi
+  while (1) {
+    // Gọi hàm xử lý bàn phím
     keypad_function();
   }
-} 
-//-----------------------------------------------
+}
+
+// Hàm này được gọi để xử lý chức năng đo độ ẩm và nhiệt độ
 void Humi_Temp_function(void *pvParameters) {
+  // Đặt chế độ INPUT cho chân cảm biến DHT22
   pinMode(pin_dht22, INPUT);
+  
+  // Khởi tạo và bật đèn nền LCD
   lcd2.init();
   lcd2.backlight();
   lcd2.begin(20, 4);
+  
+  // Hiển thị thông tin lên LCD
   lcd2.setCursor(0, 0);
   lcd2.print("HUMI:  ");
   lcd2.setCursor(0, 1);
@@ -363,8 +392,10 @@ void Humi_Temp_function(void *pvParameters) {
   lcd2.print(" C");
   lcd2.setCursor(0, 2);
   lcd2.print("GAS:  ");
-
+  
+  // Vòng lặp vô hạn để giữ task này chạy mãi mãi
   while (1) {
+    // Gọi hàm đo độ ẩm
     humid_function();
   }
 }
@@ -563,38 +594,61 @@ void writeID(byte a[]) {
 
 
 void deleteID(byte a[]) {
+  // Kiểm tra xem ID có tồn tại không
   if (!findID(a)) {
+    // Nếu không tồn tại, gọi hàm failedWrite()
     failedWrite();
   } else {
+    // Đọc số lượng ID hiện tại từ EEPROM
     int num = EEPROM.read(0);
     int slot;
     int start;
     int looping;
     int j;
     int count = EEPROM.read(0);
+    
+    // Tìm vị trí (slot) của ID cần xóa
     slot = findIDSLOT(a);
+    
+    // Tính toán vị trí bắt đầu của ID cần xóa trong EEPROM
     start = (slot * 4) + 2;
+    
+    // Tính toán số byte cần dịch chuyển
     looping = ((num - slot) * 4);
+    
+    // Giảm số lượng ID đi 1
     num--;
+    
+    // Ghi lại số lượng ID mới vào EEPROM
     EEPROM.write(0, num);
+    
+    // Dịch chuyển các ID sau ID cần xóa lên vị trí trước đó
     for (j = 0; j < looping; j++) {
       EEPROM.write(start + j, EEPROM.read(start + 4 + j));
     }
+    
+    // Xóa 4 byte cuối cùng (đã được dịch chuyển lên trước đó)
     for (int k = 0; k < 4; k++) {
       EEPROM.write(start + j + k, 0);
     }
+    
+    // Gọi hàm successDelete() để thông báo xóa thành công
     successDelete();
   }
 }
 
-
 boolean checkTwo(byte a[], byte b[]) {
+  // Kiểm tra nếu phần tử đầu tiên của mảng a không phải NULL
   if (a[0] != NULL)
     match = true;
+    
+  // So sánh từng phần tử của hai mảng a và b
   for (int k = 0; k < 4; k++) {
     if (a[k] != b[k])
       match = false;
   }
+  
+  // Nếu tất cả phần tử đều khớp, trả về true, ngược lại trả về false
   if (match) {
     return true;
   } else {
@@ -602,33 +656,40 @@ boolean checkTwo(byte a[], byte b[]) {
   }
 }
 
-
 int findIDSLOT(byte find[]) {
+  // Đọc số lượng ID hiện tại từ EEPROM
   int count = EEPROM.read(0);
+  
+  // Duyệt qua từng ID để tìm vị trí của ID cần tìm
   for (int i = 1; i <= count; i++) {
     readID(i);
     if (checkTwo(find, storedCard)) {
-
+      // Nếu tìm thấy, trả về vị trí (slot) của ID
       return i;
       break;
     }
   }
 }
 
-
 boolean findID(byte find[]) {
+  // Đọc số lượng ID hiện tại từ EEPROM
   int count = EEPROM.read(0);
+  
+  // Duyệt qua từng ID để kiểm tra sự tồn tại của ID cần tìm
   for (int i = 1; i <= count; i++) {
     readID(i);
     if (checkTwo(find, storedCard)) {
+      // Nếu tìm thấy, trả về true
       return true;
       break;
     } else {
+      // Nếu không tìm thấy, tiếp tục vòng lặp
     }
   }
+  
+  // Nếu duyệt hết mà không tìm thấy, trả về false
   return false;
 }
-
 
 
 void successWrite() {
