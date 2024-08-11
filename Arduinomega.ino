@@ -51,36 +51,37 @@ byte masterCard[4]; // Mảng lưu trữ thẻ chủ
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Khai báo đối tượng MFRC522 cho RFID
 
 //--------------------------------------------
-LiquidCrystal_I2C lcd2(0X27, 20, 4);
-LiquidCrystal_I2C lcd(0x26, 16, 2);
-SDHT dht;
+LiquidCrystal_I2C lcd2(0X27, 20, 4); // Khởi tạo đối tượng LCD I2C với địa chỉ 0x27, màn hình 20 cột và 4 hàng.
+LiquidCrystal_I2C lcd(0x26, 16, 2);  // Khởi tạo đối tượng LCD I2C với địa chỉ 0x26, màn hình 16 cột và 2 hàng.
+SDHT dht; // Khởi tạo đối tượng SDHT để sử dụng với cảm biến DHT (đo nhiệt độ và độ ẩm).
 //................................................
-char password[4];
-char initial_password[4],new_password[4];
-int vcc=11;
-int i=0;
-//int relay_pin = 11;
-char key_pressed=0;
-const byte rows = 4; 
-const byte columns = 4; 
-char hexaKeys[rows][columns] = {
+char password[4]; // Khai báo mảng để lưu mật khẩu hiện tại (4 ký tự).
+char initial_password[4], new_password[4]; // Khai báo mảng để lưu mật khẩu ban đầu và mật khẩu mới.
+int vcc = 11; // Khai báo biến 'vcc' với giá trị 11 (có thể để điều khiển chân nguồn).
+int i = 0; // Khai báo biến 'i' với giá trị ban đầu là 0, dùng để đếm hoặc vòng lặp.
+// int relay_pin = 11; // Khai báo chân relay (bị comment, không được sử dụng).
+char key_pressed = 0; // Khai báo biến để lưu phím vừa nhấn trên bàn phím ma trận.
+const byte rows = 4;  // Định nghĩa số hàng của bàn phím ma trận là 4.
+const byte columns = 4;  // Định nghĩa số cột của bàn phím ma trận là 4.
+char hexaKeys[rows][columns] = { // Khai báo mảng hai chiều chứa các ký tự trên bàn phím ma trận.
 {'1','2','3','A'},
 {'4','5','6','B'},
 {'7','8','9','C'},
 {'*','0','#','D'}
 };
-byte row_pins[rows]={A8,A9,A10,A11};
-byte column_pins[columns]={A12,A13,A14,A15};
-Keypad keypad_key=Keypad( makeKeymap(hexaKeys),row_pins,column_pins,rows,columns);
+byte row_pins[rows] = {A8, A9, A10, A11}; // Khai báo mảng chứa các chân của các hàng bàn phím.
+byte column_pins[columns] = {A12, A13, A14, A15}; // Khai báo mảng chứa các chân của các cột bàn phím.
+Keypad keypad_key = Keypad(makeKeymap(hexaKeys), row_pins, column_pins, rows, columns); // Khởi tạo đối tượng 'keypad_key' để điều khiển bàn phím ma trận.
+
 //----------------------------------------------------------------------------------
 void setup() {
-  Serial.begin(9600);
-  pinMode(relay, OUTPUT);
-  digitalWrite(relay, LOW);
-  xTaskCreate(Humi_Temp_function, "Humi_Temp", 200, NULL, 2, NULL);
-  xTaskCreate(RFID_CLOCK_function, "RFID_CLOCK", 500, NULL, 1, NULL);
-  xTaskCreate(keypad_password_function, "keypad", 500, NULL,1, NULL);
-  xTaskCreate(distance_hcsr04_function, "hcsr04", 500, NULL, 1, NULL);
+  Serial.begin(9600); // Khởi động giao tiếp Serial với tốc độ 9600 bps.
+  pinMode(relay, OUTPUT); // Đặt chế độ của chân 'relay' là OUTPUT (đầu ra).
+  digitalWrite(relay, LOW); // Đặt trạng thái ban đầu của relay là LOW (tắt relay).
+  xTaskCreate(Humi_Temp_function, "Humi_Temp", 200, NULL, 2, NULL); // Tạo task FreeRTOS để đo nhiệt độ và độ ẩm.
+  xTaskCreate(RFID_CLOCK_function, "RFID_CLOCK", 500, NULL, 1, NULL); // Tạo task FreeRTOS để xử lý RFID và thời gian.
+  xTaskCreate(keypad_password_function, "keypad", 500, NULL, 1, NULL); // Tạo task FreeRTOS để xử lý nhập mật khẩu từ bàn phím.
+  xTaskCreate(distance_hcsr04_function, "hcsr04", 500, NULL, 1, NULL); // Tạo task FreeRTOS để đo khoảng cách bằng cảm biến HC-SR04.
 }
 //......................................................
 float GetDistance()
@@ -101,22 +102,23 @@ float GetDistance()
   vTaskDelay(200 / portTICK_PERIOD_MS);
   return distanceCm;
 }
-
 void distance_function()
-{
-  long distance = GetDistance();
-  if (distance <= 0)
+{ 
+  long distance = GetDistance(); // Lấy khoảng cách đo được từ cảm biến và lưu vào biến 'distance'.
+
+  if (distance <= 0) // Kiểm tra nếu giá trị khoảng cách không hợp lệ hoặc không đo được.
   {
-    Serial.println("Quá thời gian đo khoảng cách !!");
+    Serial.println("Quá thời gian đo khoảng cách !!"); // In thông báo lỗi nếu khoảng cách không hợp lệ.
   }
   else
   {   
-    Serial.print("Khoảng cách (cm): ");
-    Serial.println(distance);
+    Serial.print("Khoảng cách (cm): "); // In chuỗi "Khoảng cách (cm): " mà không xuống dòng.
+    Serial.println(distance); // In giá trị khoảng cách đo được và xuống dòng.
   }
-  if (distance < 20) 
+
+  if (distance < 20) // Kiểm tra nếu khoảng cách nhỏ hơn 20 cm.
   {
-    runServo();
+    runServo(); // Gọi hàm 'runServo()' để thực hiện một hành động điều khiển servo.
   }
 }
 
